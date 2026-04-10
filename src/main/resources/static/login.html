@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAL AirTravel - Đăng nhập</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            /* Background hình bầu trời/máy bay, bạn có thể thay link ảnh thật vào url() */
+            background: linear-gradient(rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 0.6)), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop') center/cover no-repeat;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand { color: var(--primary); font-size: 28px; font-weight: 900; letter-spacing: 1px; margin-bottom: 10px; }
+        .subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 30px; }
+
+        .form-group { text-align: left; margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 8px; }
+        .form-group input { 
+            width: 100%; padding: 14px; border: 1px solid #d1d5db; 
+            border-radius: 10px; font-size: 15px; transition: all 0.3s;
+            background: #f9fafb;
+        }
+        .form-group input:focus { 
+            outline: none; border-color: var(--primary); background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); 
+        }
+
+        .btn-login {
+            width: 100%; padding: 14px; background: var(--primary);
+            color: white; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            margin-top: 10px;
+        }
+        .btn-login:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+
+        .error-msg { color: #ef4444; font-size: 14px; margin-top: 15px; font-weight: 500; min-height: 20px; }
+        .footer-links { margin-top: 25px; font-size: 14px; color: var(--text-muted); }
+        .footer-links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .footer-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <div class="brand">✈ KAL AirTravel</div>
+        <p class="subtitle">Khám phá thế giới cùng chúng tôi</p>
+
+        <form id="customerLoginForm">
+            <div class="form-group">
+                <label>Tên đăng nhập</label>
+                <input type="text" id="username" placeholder="Nhập tên tài khoản" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <input type="password" id="password" placeholder="Nhập mật khẩu" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">Đăng nhập</button>
+            <div id="errorMsg" class="error-msg"></div>
+        </form>
+
+        <div class="footer-links">
+            Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('customerLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Chặn tải lại trang
+            
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('errorMsg');
+
+            btn.innerText = 'Đang xử lý...';
+            btn.disabled = true;
+            errorDiv.innerText = '';
+
+            // Gọi API Đăng nhập
+            fetch('/api/customer/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    // Lưu thông tin khách hàng vào LocalStorage để dùng ở trang chủ
+                    localStorage.setItem('customerData', JSON.stringify({
+                        id: data.customerId,
+                        name: data.customerName
+                    }));
+                    // Chuyển hướng về Trang Chủ (sau này bạn tạo trang chủ index.html)
+                    window.location.href = '/'; 
+                } else {
+                    errorDiv.innerText = data.message || 'Sai tài khoản hoặc mật khẩu!';
+                    btn.innerText = 'Đăng nhập';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                errorDiv.innerText = 'Lỗi kết nối máy chủ!';
+                btn.innerText = 'Đăng nhập';
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>

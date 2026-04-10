@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAL AirTravel - Thanh toán</title>
+    <style>
+        :root { --primary: #2563eb; --primary-hover: #1d4ed8; --text-main: #1f2937; --bg-gray: #f3f4f6; --card-bg: #ffffff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-gray); color: var(--text-main); }
+        .navbar { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        .brand { font-size: 24px; font-weight: 900; color: var(--primary); text-decoration: none; }
+        .container { display: flex; max-width: 1200px; margin: 30px auto; gap: 30px; padding: 0 20px; align-items: flex-start; }
+        .main-form { flex-grow: 1; }
+        .section-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; color: #111827; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+        .card-header { background: #eff6ff; padding: 10px 15px; border-radius: 8px; font-weight: 600; color: var(--primary); margin-bottom: 20px; border-left: 4px solid var(--primary); display: flex; justify-content: space-between;}
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 8px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #f9fafb; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .sidebar { width: 350px; flex-shrink: 0; position: sticky; top: 90px; }
+        .summary-card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 2px solid var(--primary); }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #4b5563; }
+        .summary-total { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px dashed #e5e7eb; font-size: 18px; font-weight: bold; color: #111827; align-items: center;}
+        .price-highlight { color: #ef4444; font-size: 24px; }
+        .btn-submit { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+        .btn-submit:hover { background: var(--primary-hover); }
+        .span-2 { grid-column: span 2; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="/" class="brand">✈ KAL AirTravel</a>
+        <div style="font-weight: 600; color: #4b5563;">Bước 3: Điền thông tin hành khách</div>
+    </nav>
+
+    <div class="container">
+        <main class="main-form">
+            <div class="section-title">🧑‍🤝‍🧑 Thông tin Hành khách</div>
+            <form id="passengerFormsContainer"></form>
+        </main>
+
+        <aside class="sidebar">
+            <div class="summary-card">
+                <h3 style="margin-bottom: 20px; color: #111827;">Tóm tắt đơn hàng</h3>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">✈ Chiều đi: FL-<span id="sumOutbound">...</span></div>
+                    <div style="font-weight: bold; margin-bottom: 5px;" id="inboundDiv">✈ Chiều về: FL-<span id="sumInbound">...</span></div>
+                    <div style="font-size: 13px; color: #6b7280;">Hạng ghế: <span id="sumClass">...</span></div>
+                </div>
+                
+                <div class="summary-row"><span>Người lớn:</span><strong id="sumAdults">0</strong></div>
+                <div class="summary-row"><span>Trẻ em:</span><strong id="sumChildren">0</strong></div>
+                
+                <div class="summary-row" style="padding-top: 10px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
+                    <span>Giá vé / khách:</span><strong id="sumUnitPrice">0 đ</strong>
+                </div>
+
+                <div class="summary-total">
+                    <span>Tổng tiền:</span>
+                    <span class="price-highlight" id="sumTotalPrice">0 đ</span>
+                </div>
+                <button type="button" class="btn-submit" onclick="submitBooking()" id="btnConfirm">Thanh Toán & Xuất Vé</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const customerDataRaw = localStorage.getItem('customerData');
+        if (!customerDataRaw) {
+            alert("Bạn cần đăng nhập để tiếp tục đặt vé!");
+            window.location.href = "/login";
+        }
+        const currentCustomer = JSON.parse(customerDataRaw);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const adults = parseInt(urlParams.get('adults')) || 1;
+        const children = parseInt(urlParams.get('children')) || 0;
+        const seatClass = urlParams.get('class') || 'Economy';
+        
+        const outboundFlight = urlParams.get('outbound');
+        const inboundFlight = urlParams.get('inbound');
+        
+        const pricePerPerson = parseInt(urlParams.get('totalPrice')) || 0; 
+        const totalPassengers = adults + children;
+        const finalTotalPrice = pricePerPerson * totalPassengers;
+
+        const formatVND = (price) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+
+        document.getElementById('sumAdults').innerText = adults;
+        document.getElementById('sumChildren').innerText = children;
+        document.getElementById('sumClass').innerText = seatClass;
+        document.getElementById('sumOutbound').innerText = outboundFlight;
+        
+        if (inboundFlight) {
+            document.getElementById('sumInbound').innerText = inboundFlight;
+        } else {
+            document.getElementById('inboundDiv').style.display = 'none';
+        }
+
+        document.getElementById('sumUnitPrice').innerText = formatVND(pricePerPerson);
+        document.getElementById('sumTotalPrice').innerText = formatVND(finalTotalPrice);
+
+        function generatePassengerForms() {
+            const container = document.getElementById('passengerFormsContainer');
+            let formHTML = '';
+            for(let i = 1; i <= adults; i++) formHTML += createFormTemplate(`Người lớn ${i}`, `adult_${i}`);
+            for(let i = 1; i <= children; i++) formHTML += createFormTemplate(`Trẻ em ${i}`, `child_${i}`);
+            container.innerHTML = formHTML;
+        }
+
+        function createFormTemplate(title, prefix) {
+            return `
+                <div class="card passenger-card" data-type="${prefix}">
+                    <div class="card-header"><span>👤 ${title}</span></div>
+                    <div class="form-grid">
+                        <div class="form-group"><label>Họ và Tên (In hoa không dấu)</label><input type="text" class="p-name" placeholder="VD: NGUYEN VAN A" required></div>
+                        <div class="form-group"><label>Ngày sinh</label><input type="date" class="p-dob" required></div>
+                        <div class="form-group"><label>CCCD / Hộ chiếu / Khai sinh</label><input type="text" class="p-passport" required></div>
+                        <div class="form-group"><label>Quốc tịch</label><input type="text" class="p-nationality" placeholder="VD: Việt Nam" required></div>
+                        <div class="form-group"><label>Số điện thoại</label><input type="tel" class="p-phone" placeholder="VD: 0912345678"></div>
+                        <div class="form-group"><label>Email</label><input type="email" class="p-email" placeholder="VD: abc@gmail.com"></div>
+                        <div class="form-group span-2"><label>Địa chỉ liên hệ</label><input type="text" class="p-address" placeholder="Nhập địa chỉ của hành khách..."></div>
+                    </div>
+                </div>`;
+        }
+        generatePassengerForms();
+
+        function submitBooking() {
+            const passengerList = [];
+            document.querySelectorAll('.passenger-card').forEach(card => {
+                passengerList.push({
+                    name: card.querySelector('.p-name').value,
+                    passport: card.querySelector('.p-passport').value,
+                    dob: card.querySelector('.p-dob').value,
+                    nationality: card.querySelector('.p-nationality').value,
+                    phone: card.querySelector('.p-phone').value,
+                    email: card.querySelector('.p-email').value,
+                    address: card.querySelector('.p-address').value
+                });
+            });
+
+            if(passengerList.some(p => !p.name || !p.passport || !p.dob || !p.nationality)) {
+                alert("Vui lòng điền đầy đủ Họ tên, Ngày sinh, CCCD và Quốc tịch cho tất cả hành khách!"); return;
+            }
+
+            // ĐÃ THÊM: Gửi thêm inboundFlightId xuống Backend, và nhân đôi TicketCount nếu là khứ hồi
+            const payload = {
+                flightId: parseInt(outboundFlight),
+                inboundFlightId: inboundFlight ? parseInt(inboundFlight) : null,
+                seatClass: seatClass,
+                totalAmount: finalTotalPrice,
+                ticketCount: inboundFlight ? (totalPassengers * 2) : totalPassengers,
+                customerId: currentCustomer.id.toString(), 
+                passengers: passengerList
+            };
+
+            document.getElementById('btnConfirm').innerText = "Đang xử lý xuất vé...";
+            document.getElementById('btnConfirm').disabled = true;
+
+            fetch('/api/booking/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    alert("🎉 Xuất vé và xếp ghế thành công! Mã đơn của bạn là: " + data.reservationId);
+                    window.location.href = "/"; 
+                } else {
+                    alert("Lỗi: " + data.message);
+                    document.getElementById('btnConfirm').innerText = "Thanh Toán & Xuất Vé";
+                    document.getElementById('btnConfirm').disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi:", err);
+                alert("Có lỗi xảy ra khi kết nối máy chủ!");
+                document.getElementById('btnConfirm').innerText = "Thanh Toán & Xuất Vé";
+                document.getElementById('btnConfirm').disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

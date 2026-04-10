@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAL AirTravel - Đăng ký tài khoản</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        body {
+            display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;
+            background: linear-gradient(rgba(17, 24, 39, 0.6), rgba(17, 24, 39, 0.6)), url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop') center/cover no-repeat;
+        }
+
+        .register-box {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 40px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%; max-width: 500px; text-align: center; animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .brand { color: var(--primary); font-size: 28px; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px; }
+        .subtitle { color: var(--text-muted); font-size: 15px; margin-bottom: 25px; }
+
+        .form-row { display: flex; gap: 15px; }
+        .form-group { text-align: left; margin-bottom: 15px; flex: 1; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+        .form-group input { 
+            width: 100%; padding: 12px; border: 1px solid #d1d5db; 
+            border-radius: 8px; font-size: 14px; transition: all 0.3s; background: #f9fafb;
+        }
+        .form-group input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .btn-register {
+            width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 15px;
+        }
+        .btn-register:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+
+        .error-msg { color: #ef4444; font-size: 13px; margin-top: 10px; font-weight: 600; min-height: 18px; }
+        .success-msg { color: #10b981; font-size: 14px; margin-top: 10px; font-weight: 600; display: none; }
+        
+        .footer-links { margin-top: 20px; font-size: 14px; color: var(--text-muted); }
+        .footer-links a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .footer-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="register-box">
+        <div class="brand">✈ KAL AirTravel</div>
+        <p class="subtitle">Tạo tài khoản để bắt đầu hành trình</p>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label>Họ và Tên</label>
+                <input type="text" id="name" placeholder="Ví dụ: Nguyễn Văn A" required>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Số điện thoại</label>
+                    <input type="tel" id="phone" placeholder="Nhập SĐT" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="Nhập Email" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Tên đăng nhập</label>
+                <input type="text" id="username" placeholder="Viết liền không dấu" required autocomplete="username">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="password" placeholder="Tạo mật khẩu" required autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label>Nhập lại mật khẩu</label>
+                    <input type="password" id="confirmPassword" placeholder="Xác nhận mật khẩu" required autocomplete="new-password">
+                </div>
+            </div>
+
+            <div id="errorMsg" class="error-msg"></div>
+            <div id="successMsg" class="success-msg">Đăng ký thành công! Đang chuyển hướng...</div>
+            
+            <button type="submit" class="btn-register" id="regBtn">Đăng ký ngay</button>
+        </form>
+
+        <div class="footer-links">
+            Đã có tài khoản? <a href="/login">Đăng nhập</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            
+            const name = document.getElementById('name').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const btn = document.getElementById('regBtn');
+            const errorDiv = document.getElementById('errorMsg');
+            const successDiv = document.getElementById('successMsg');
+
+            // Bước kiểm tra mật khẩu trùng khớp ở phía Frontend
+            if (password !== confirmPassword) {
+                errorDiv.innerText = 'Mật khẩu nhập lại không khớp!';
+                document.getElementById('confirmPassword').focus();
+                return;
+            }
+
+            btn.innerText = 'Đang xử lý...';
+            btn.disabled = true;
+            errorDiv.innerText = '';
+
+            const customerData = {
+                name: name,
+                phoneNo: phone,
+                email: email,
+                username: username,
+                password: password
+            };
+
+            // Gọi API Đăng ký
+            fetch('/api/customer/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(customerData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    errorDiv.style.display = 'none';
+                    successDiv.style.display = 'block';
+                    btn.style.display = 'none';
+                    
+                    // Chuyển hướng sang trang đăng nhập sau 2 giây
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    errorDiv.innerText = data.message || 'Lỗi hệ thống, vui lòng thử lại!';
+                    btn.innerText = 'Đăng ký ngay';
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                errorDiv.innerText = 'Lỗi kết nối máy chủ!';
+                btn.innerText = 'Đăng ký ngay';
+                btn.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
