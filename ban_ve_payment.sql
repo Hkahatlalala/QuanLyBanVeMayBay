@@ -1,0 +1,59 @@
+CREATE DATABASE  IF NOT EXISTS `ban_ve` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `ban_ve`;
+-- MySQL dump 10.13  Distrib 8.0.45, for Win64 (x86_64)
+--
+-- Host: localhost    Database: ban_ve
+-- ------------------------------------------------------
+-- Server version	8.0.45
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `payment`
+--
+
+DROP TABLE IF EXISTS `payment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payment` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `payment_time` datetime DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `method` enum('transfer','card','cash') DEFAULT NULL,
+  `status` tinyint(1) DEFAULT NULL,
+  `reservation_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `reservation_id` (`reservation_id`),
+  CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`reservation_id`) REFERENCES `reservation` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `payment`
+--
+
+LOCK TABLES `payment` WRITE;
+/*!40000 ALTER TABLE `payment` DISABLE KEYS */;
+INSERT INTO `payment` VALUES (1,'2026-03-24 16:23:00',4500000.00,'card',1,1),(2,'2026-04-12 18:31:00',4500000.00,'transfer',1,2),(3,'2026-04-03 13:23:00',-1500000.00,'transfer',2,3),(4,'2026-03-27 18:33:00',-1500000.00,'card',2,4),(5,'2026-04-04 12:49:00',4500000.00,'transfer',1,5),(6,'2026-03-22 17:23:00',7500000.00,'card',1,6),(7,'2026-04-06 17:17:00',4500000.00,'card',1,7),(8,'2026-04-05 13:23:00',7500000.00,'transfer',1,8),(9,'2026-04-14 09:29:00',-9000000.00,'transfer',2,9),(10,'2026-04-08 19:44:00',15000000.00,'card',1,10),(11,'2026-03-12 16:34:00',9000000.00,'transfer',1,11),(12,'2026-04-10 13:22:00',6000000.00,'card',1,12),(13,'2026-04-05 10:16:00',30000000.00,'card',1,13),(14,'2026-04-11 14:16:00',-1500000.00,'transfer',2,14),(15,'2026-03-23 15:42:00',-4500000.00,'card',2,15),(16,'2026-03-22 19:27:00',22500000.00,'transfer',1,16),(17,'2026-04-01 16:13:00',13500000.00,'card',1,17),(18,'2026-03-21 20:32:00',1500000.00,'card',1,18),(19,'2026-04-01 10:50:00',7500000.00,'transfer',1,19),(20,'2026-04-08 15:41:00',9000000.00,'card',1,20),(21,'2026-03-18 14:13:00',15000000.00,'card',1,21),(22,'2026-04-04 16:15:00',6000000.00,'transfer',1,22),(23,'2026-04-12 11:31:00',30000000.00,'transfer',1,23),(24,'2026-04-05 10:50:00',18000000.00,'transfer',1,24),(25,'2026-03-21 08:37:00',18000000.00,'transfer',1,25),(26,'2026-04-03 14:28:00',4500000.00,'card',1,26),(27,'2026-04-03 14:28:00',22500000.00,'transfer',1,27),(28,'2026-03-19 16:49:00',4500000.00,'card',1,28),(29,'2026-03-19 16:49:00',4500000.00,'card',1,29),(30,'2026-03-11 11:17:00',2250000.00,'card',1,30);
+/*!40000 ALTER TABLE `payment` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-04-16 21:38:49

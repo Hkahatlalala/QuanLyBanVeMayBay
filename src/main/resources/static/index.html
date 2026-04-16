@@ -119,7 +119,9 @@
                     <label><input type="radio" name="tripType" value="oneWay" checked onchange="toggleReturnDate()"> Một chiều</label>
                     <label><input type="radio" name="tripType" value="roundTrip" onchange="toggleReturnDate()"> Khứ hồi</label>
                 </div>
-                <label style="margin-left: 10px; font-weight: 500;"><input type="checkbox"> Bay thẳng</label>
+                <label style="margin-left: 10px; font-weight: 500;">
+                    <input type="checkbox" id="isDirectOnly"> Bay thẳng
+                </label>
                 
                 <div class="select-group" style="margin-left: auto; display: flex; gap: 10px;">
                     
@@ -284,7 +286,6 @@
             const returnDateInput = document.getElementById('returnDate');
             if (tripType === 'roundTrip') {
                 returnDateInput.disabled = false; returnDateInput.style.background = 'white';
-                // ĐÃ SỬA: Cho phép để trống ngày về
                 returnDateInput.style.cursor = 'text'; returnDateInput.required = false;
             } else {
                 returnDateInput.disabled = true; returnDateInput.style.background = '#e5e7eb';
@@ -307,18 +308,19 @@
             const depId = document.getElementById('departure').value;
             const arrId = document.getElementById('arrival').value;
             const depDate = document.getElementById('departDate').value;
-            const returnDate = document.getElementById('returnDate').value; // Lấy thêm ngày về
+            const returnDate = document.getElementById('returnDate').value; 
             const seatClass = document.getElementById('seatClass').value;
             const tripType = document.querySelector('input[name="tripType"]:checked').value;
+            const isDirectOnly = document.getElementById('isDirectOnly').checked; // Lấy giá trị Bay Thẳng
             
             if(depId === arrId) {
                 alert("Điểm đi và Điểm đến không được trùng nhau!");
                 return;
             }
 
-            let redirectUrl = `/search-results?dep=${depId}&arr=${arrId}&date=${depDate}&class=${seatClass}&adults=${adultQty}&children=${childQty}`;
+            // Gắn cờ directOnly lên URL
+            let redirectUrl = `/search-results?dep=${depId}&arr=${arrId}&date=${depDate}&class=${seatClass}&adults=${adultQty}&children=${childQty}&directOnly=${isDirectOnly}`;
             
-            // ĐÃ SỬA: Ném luôn returnDate lên URL nếu khách chọn Khứ hồi
             if (tripType === 'roundTrip') {
                 redirectUrl += `&returnDate=${returnDate}`;
             }

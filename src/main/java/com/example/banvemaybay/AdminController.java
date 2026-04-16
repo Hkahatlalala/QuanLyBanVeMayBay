@@ -45,9 +45,24 @@ public class AdminController {
     @ResponseBody 
     public List<Map<String, Object>> getAllAircrafts() { return aircraftRepository.findAllAircraftInfo(); }
 
+    // Sắp xếp ID Tăng dần theo yêu cầu của bạn
     @GetMapping("/api/reservations")
     @ResponseBody 
-    public List<Map<String, Object>> getAllReservations() { return reservationRepository.findAllReservationInfo(); }
+    public List<Map<String, Object>> getAllReservations() { 
+        String sql = "SELECT r.id AS reservationId, " +
+                     "GROUP_CONCAT(DISTINCT t.flight_id ORDER BY t.id ASC SEPARATOR ', ') AS flightCodes, " +
+                     "c.name AS customerName, c.phone_no AS customerPhone, " +
+                     "r.created_at AS createdAt, " +
+                     "COUNT(t.id) AS ticketCount, " +
+                     "SUM(t.price) AS totalAmount, " +
+                     "r.status " +
+                     "FROM reservation r " +
+                     "LEFT JOIN customer c ON r.customer_id = c.id " +
+                     "LEFT JOIN ticket t ON r.id = t.reservation_id " +
+                     "GROUP BY r.id, c.name, c.phone_no, r.created_at, r.status " +
+                     "ORDER BY r.id ASC"; 
+        return jdbcTemplate.queryForList(sql); 
+    }
 
     @PutMapping("/api/reservations/{id}/status")
     @ResponseBody 
@@ -72,37 +87,35 @@ public class AdminController {
     private void assignSeatsForReservation(Integer reservationId) {
         String getTicketsSql = "SELECT id, flight_id FROM ticket WHERE reservation_id = ? AND seat_no IS NULL";
         List<Map<String, Object>> tickets = jdbcTemplate.queryForList(getTicketsSql, reservationId);
-        if (tickets.isEmpty()) return; 
-
-        Integer flightId = (Integer) tickets.get(0).get("flight_id");
-        String getTakenSeatsSql = "SELECT seat_no FROM ticket WHERE flight_id = ? AND seat_no IS NOT NULL AND status != 'cancelled'";
-        List<String> takenSeats = jdbcTemplate.queryForList(getTakenSeatsSql, String.class, flightId);
-
-        String[] seatLetters = {"A", "B", "C", "D", "E", "F"};
-        int currentRow = 1;
-        int currentLetterIndex = 0;
-
+        
         for (Map<String, Object> t : tickets) {
             Integer ticketId = (Integer) t.get("id");
+            Integer flightId = (Integer) t.get("flight_id");
+
+            String getTakenSeatsSql = "SELECT seat_no FROM ticket WHERE flight_id = ? AND seat_no IS NOT NULL AND status != 'cancelled'";
+            List<String> takenSeats = jdbcTemplate.queryForList(getTakenSeatsSql, String.class, flightId);
+
+            String[] seatLetters = {"A", "B", "C", "D", "E", "F"};
+            int currentRow = 1;
+            int currentLetterIndex = 0;
             String assignedSeat = null;
 
             while (assignedSeat == null) {
                 String potentialSeat = currentRow + seatLetters[currentLetterIndex];
                 if (!takenSeats.contains(potentialSeat)) {
                     assignedSeat = potentialSeat;
-                    takenSeats.add(assignedSeat); 
-                }
-                currentLetterIndex++;
-                if (currentLetterIndex >= seatLetters.length) {
-                    currentLetterIndex = 0;
-                    currentRow++; 
+                } else {
+                    currentLetterIndex++;
+                    if (currentLetterIndex >= seatLetters.length) {
+                        currentLetterIndex = 0;
+                        currentRow++; 
+                    }
                 }
             }
             jdbcTemplate.update("UPDATE ticket SET seat_no = ? WHERE id = ?", assignedSeat, ticketId);
         }
     }
 
-    // --- API HOÀN TIỀN CHUẨN ---
     @PostMapping("/api/reservations/{id}/refund")
     @ResponseBody
     public Map<String, Object> refundReservation(@PathVariable Integer id) {

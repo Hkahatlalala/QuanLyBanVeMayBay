@@ -21,22 +21,35 @@
         .journey-title { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 15px; }
         .journey-meta { font-size: 14px; opacity: 0.9; margin-top: 5px; }
         .step-badge { background: white; color: var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; text-transform: uppercase; }
-        .flight-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; border: 1px solid transparent; }
+        
+        .flight-card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; border: 1px solid transparent; }
         .flight-card:hover { border-color: var(--primary); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .flight-main-row { display: flex; justify-content: space-between; align-items: center; }
         .flight-info { display: flex; align-items: center; gap: 30px; flex-grow: 1; }
         .airline-logo { width: 50px; height: 50px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; color: #6b7280; text-align: center;}
         .time-group { text-align: center; }
         .time { font-size: 22px; font-weight: bold; color: #111827; }
         .airport-code { font-size: 14px; color: #6b7280; font-weight: 600; margin-top: 5px; }
+        
         .flight-duration { text-align: center; color: #6b7280; font-size: 13px; position: relative; padding: 0 20px; }
         .flight-duration::after { content: ''; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px solid #d1d5db; z-index: 1; }
+        .flight-duration.connecting::after { border-top: 1px dashed var(--primary); }
         .flight-duration span { background: white; padding: 0 10px; position: relative; z-index: 2; }
+        .flight-duration.connecting span { color: var(--primary); font-weight: bold; background: #eff6ff; border-radius: 4px; padding: 2px 8px; }
+        
         .flight-meta { font-size: 13px; color: #4b5563; display: flex; flex-direction: column; gap: 5px; border-left: 1px dashed #d1d5db; padding-left: 20px;}
         .price-action { text-align: right; min-width: 150px; }
         .price { font-size: 24px; font-weight: bold; color: #ef4444; margin-bottom: 10px; }
         .btn-select { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-select:hover:not(:disabled) { background: var(--primary-hover); }
         .no-flights { text-align: center; padding: 40px; color: #6b7280; background: white; border-radius: 12px; }
+
+        .segments-details { display: none; background: #f9fafb; margin-top: 20px; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary); border-top: 1px solid #e5e7eb;}
+        .segments-details.show { display: block; animation: fadeIn 0.3s ease; }
+        .segment-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #1f2937;}
+        .layover-row { text-align: center; padding: 8px; background: #fee2e2; color: #b91c1c; font-weight: bold; border-radius: 4px; margin: 5px 0; font-size: 12px; }
+        .btn-toggle-details { background: none; border: none; color: var(--primary); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block;}
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -76,6 +89,7 @@
         const adults = parseInt(urlParams.get('adults')) || 1;
         const children = parseInt(urlParams.get('children')) || 0;
         const isRoundTrip = urlParams.has('returnDate');
+        const isDirectOnly = urlParams.get('directOnly') === 'true';
         
         let currentStep = 1; 
         let selectedOutboundFlight = null; 
@@ -83,12 +97,10 @@
         let airportMap = {}; 
         let realFlightsData = []; 
 
-        // Tải danh sách sân bay để map ID thành Tên thành phố/Sân bay
         fetch('/api/airports')
             .then(res => res.json())
             .then(data => {
                 data.forEach(airport => {
-                    // Tách tên thành phố từ chuỗi "Hà Nội, Việt Nam"
                     const cityOnly = airport.locationText ? airport.locationText.split(',')[0] : 'N/A';
                     airportMap[airport.id] = { 
                         cityName: cityOnly, 
@@ -122,65 +134,102 @@
             }
         }
 
+        const parseDateLocal = (dateStr) => {
+            if(!dateStr) return null;
+            let s = String(dateStr).split('+')[0].replace('Z', '').replace(' ', 'T');
+            return new Date(s);
+        };
+
         function fetchFlightsFromDB() {
             fetch('/api/flights')
                 .then(res => res.json())
                 .then(flights => {
-                    // Lấy đúng tên sân bay từ Map để so sánh với DepartureLocation trong Backend
                     const depAirportCompare = airportMap[depId] ? airportMap[depId].airportName : "";
                     const arrAirportCompare = airportMap[arrId] ? airportMap[arrId].airportName : "";
+                    const targetDate = (currentStep === 1) ? date : (urlParams.get('returnDate') || '');
 
-                    let filtered = flights.filter(f => {
-                        const matchRoute = (currentStep === 1) 
-                            ? (f.departureLocation === depAirportCompare && f.arrivalLocation === arrAirportCompare)
-                            : (f.departureLocation === arrAirportCompare && f.arrivalLocation === depAirportCompare);
-                        
-                        const safeDepString = String(f.scheduledDeparture).replace(' ', 'T');
-                        const flightDateObj = new Date(safeDepString);
+                    const formattedFlights = flights.map(f => {
+                        const dObj = parseDateLocal(f.scheduledDeparture);
+                        const aObj = f.scheduledArrival ? parseDateLocal(f.scheduledArrival) : null;
+                        const formattedClass = seatClass.charAt(0).toUpperCase() + seatClass.slice(1).toLowerCase();
+                        const basePrice = f["price" + formattedClass] || 0;
+                        return { ...f, dObj, aObj, basePrice };
+                    });
 
-                        let matchDate = true; 
-                        const targetDate = (currentStep === 1) ? date : (urlParams.get('returnDate') || '');
+                    let finalResults = [];
+                    const actualDep = (currentStep === 1) ? depAirportCompare : arrAirportCompare;
+                    const actualArr = (currentStep === 1) ? arrAirportCompare : depAirportCompare;
 
+                    formattedFlights.forEach(f => {
+                        let matchRoute = (f.departureLocation === actualDep && f.arrivalLocation === actualArr);
+                        let matchDate = true;
                         if (targetDate && targetDate.trim() !== "") {
-                            const yyyy = flightDateObj.getFullYear();
-                            const mm = String(flightDateObj.getMonth() + 1).padStart(2, '0');
-                            const dd = String(flightDateObj.getDate()).padStart(2, '0');
-                            const fDate = `${yyyy}-${mm}-${dd}`; 
+                            const fDate = `${f.dObj.getFullYear()}-${String(f.dObj.getMonth()+1).padStart(2,'0')}-${String(f.dObj.getDate()).padStart(2,'0')}`;
                             matchDate = (fDate === targetDate);
                         }
-                        return matchRoute && matchDate;
+
+                        if (matchRoute && matchDate) {
+                            finalResults.push({
+                                id: String(f.flightId),
+                                isConnecting: false,
+                                airline: f.airlineName,
+                                logo: f.airlineName ? f.airlineName.substring(0, 2).toUpperCase() : 'FL',
+                                depTime: f.dObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}),
+                                arrTime: f.aObj ? f.aObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : 'N/A',
+                                flightDate: f.dObj.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}),
+                                baggage: '20kg',
+                                price: f.basePrice
+                            });
+                        }
                     });
 
-                    realFlightsData = filtered.map(f => {
-                        const safeDepString = String(f.scheduledDeparture).replace(' ', 'T');
-                        const depDateObj = new Date(safeDepString);
-                        const depTimeString = depDateObj.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
-                        const flightDateDisplay = depDateObj.toLocaleDateString('vi-VN', {day: '2-digit', month: '2-digit', year: 'numeric'});
-
-                        let arrTimeString = "N/A";
-                        if (f.scheduledArrival) {
-                            const safeArrString = String(f.scheduledArrival).replace(' ', 'T');
-                            const arrDateObj = new Date(safeArrString);
-                            arrTimeString = arrDateObj.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+                    if (!isDirectOnly) {
+                        let leg1List = formattedFlights.filter(f => f.departureLocation === actualDep);
+                        if (targetDate && targetDate.trim() !== "") {
+                            leg1List = leg1List.filter(f => {
+                                const fDate = `${f.dObj.getFullYear()}-${String(f.dObj.getMonth()+1).padStart(2,'0')}-${String(f.dObj.getDate()).padStart(2,'0')}`;
+                                return fDate === targetDate;
+                            });
                         }
 
-                        // Lấy giá dựa trên Hạng ghế người dùng đã chọn
-                        const formattedClass = seatClass.charAt(0).toUpperCase() + seatClass.slice(1).toLowerCase();
-                        const priceKey = "price" + formattedClass; 
-                        const basePrice = f[priceKey] || 0;
+                        let leg2List = formattedFlights.filter(f => f.arrivalLocation === actualArr);
 
-                        return {
-                            id: f.flightId,
-                            airline: f.airlineName,
-                            logo: f.airlineName ? f.airlineName.substring(0, 2).toUpperCase() : 'FL', 
-                            depTime: depTimeString,
-                            arrTime: arrTimeString,
-                            flightDate: flightDateDisplay, 
-                            baggage: '20kg',
-                            price: basePrice 
-                        };
-                    });
+                        leg1List.forEach(f1 => {
+                            leg2List.forEach(f2 => {
+                                if (f1.arrivalLocation === f2.departureLocation && f1.aObj && f2.dObj) {
+                                    const diffHours = (f2.dObj.getTime() - f1.aObj.getTime()) / (1000 * 60 * 60);
+                                    if (diffHours >= 2 && diffHours <= 12) {
+                                        finalResults.push({
+                                            id: `${f1.flightId}_${f2.flightId}`, 
+                                            isConnecting: true,
+                                            airline: `${f1.airlineName} & ${f2.airlineName}`,
+                                            logo: '✈️',
+                                            depTime: f1.dObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}),
+                                            arrTime: f2.aObj ? f2.aObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : 'N/A',
+                                            flightDate: f1.dObj.toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit', year:'numeric'}),
+                                            baggage: '20kg (Chuyển tiếp)',
+                                            price: f1.basePrice + f2.basePrice,
+                                            layover: {
+                                                airport: f1.arrivalLocation,
+                                                waitTime: `${Math.floor(diffHours)}h ${Math.round((diffHours % 1) * 60)}m`
+                                            },
+                                            seg1: {
+                                                airline: f1.airlineName, dep: f1.departureLocation, arr: f1.arrivalLocation,
+                                                depTime: f1.dObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})
+                                            },
+                                            seg2: {
+                                                airline: f2.airlineName, dep: f2.departureLocation, arr: f2.arrivalLocation,
+                                                depTime: f2.dObj.toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
 
+                    finalResults.sort((a, b) => a.price - b.price);
+                    realFlightsData = finalResults;
                     renderFilters(realFlightsData);
                     renderFlights(realFlightsData);
                 })
@@ -231,7 +280,9 @@
                 if (unitPrice > 0) {
                     const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(unitPrice);
                     priceDisplay = `<div class="price">${formattedPrice} <span style="font-size: 14px; color: #6b7280; font-weight: 500;">/ khách</span></div>`;
-                    btnDisplay = `<button class="btn-select" onclick="selectFlight(${flight.id}, ${unitPrice})">Chọn chuyến bay</button>`;
+                    
+                    // CHÚ Ý CHỖ NÀY: Dùng nháy đơn bọc '${flight.id}' để chuỗi "3_7" được giữ nguyên khi ấn nút
+                    btnDisplay = `<button class="btn-select" onclick="selectFlight('${flight.id}', ${unitPrice})">Chọn chuyến bay</button>`;
                 } else {
                     priceDisplay = `<div class="price" style="color:#9ca3af; font-size: 16px;">Hết vé hạng này</div>`;
                     btnDisplay = `<button class="btn-select" style="background:#d1d5db; cursor:not-allowed;" disabled>Không thể đặt</button>`;
@@ -240,35 +291,75 @@
                 const displayDepName = currentStep === 1 ? depInfo.airportName : arrInfo.airportName;
                 const displayArrName = currentStep === 1 ? arrInfo.airportName : depInfo.airportName;
 
+                let durationHTML = '';
+                let detailsHTML = '';
+                let toggleBtnHTML = '';
+
+                if (!flight.isConnecting) {
+                    durationHTML = `<div class="flight-duration"><span>Bay thẳng</span></div>`;
+                } else {
+                    durationHTML = `<div class="flight-duration connecting"><span>1 điểm dừng (${flight.layover.airport})</span></div>`;
+                    toggleBtnHTML = `<button class="btn-toggle-details" onclick="toggleDetails('${flight.id}')">Xem chi tiết 2 chặng bay ▼</button>`;
+                    detailsHTML = `
+                        <div class="segments-details" id="details-${flight.id}">
+                            <div class="segment-row">
+                                <span>🛫 <b>Chặng 1:</b> ${flight.seg1.depTime} (${flight.seg1.dep}) ➔ ${flight.layover.airport}</span>
+                                <span style="font-weight: 600;">${flight.seg1.airline}</span>
+                            </div>
+                            <div class="layover-row">
+                                ⏳ Nghỉ tại ${flight.layover.airport} | Thời gian chờ: ${flight.layover.waitTime}
+                            </div>
+                            <div class="segment-row">
+                                <span>🛫 <b>Chặng 2:</b> ${flight.seg2.depTime} (${flight.seg2.dep}) ➔ ${displayArrName}</span>
+                                <span style="font-weight: 600;">${flight.seg2.airline}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 const cardHTML = `
-                    <div class="flight-card">
-                        <div class="flight-info">
-                            <div class="airline-logo">${flight.logo}</div>
-                            <div class="time-group">
-                                <div class="time">${flight.depTime}</div>
-                                <div class="airport-code">${displayDepName}</div>
+                    <div class="flight-card" style="display: block;">
+                        <div class="flight-main-row">
+                            <div class="flight-info">
+                                <div class="airline-logo">${flight.logo}</div>
+                                <div class="time-group">
+                                    <div class="time">${flight.depTime}</div>
+                                    <div class="airport-code">${displayDepName}</div>
+                                </div>
+                                ${durationHTML}
+                                <div class="time-group">
+                                    <div class="time">${flight.arrTime}</div>
+                                    <div class="airport-code">${displayArrName}</div>
+                                </div>
+                                <div class="flight-meta">
+                                    <span>Hãng: <b>${flight.airline}</b></span>
+                                    <span>🧳 ${flight.baggage}</span>
+                                    <span style="color: var(--primary); font-weight: 600; margin-top: 4px;">📅 Ngày: ${flight.flightDate}</span>
+                                </div>
                             </div>
-                            <div class="flight-duration"><span>Bay thẳng</span></div>
-                            <div class="time-group">
-                                <div class="time">${flight.arrTime}</div>
-                                <div class="airport-code">${displayArrName}</div>
-                            </div>
-                            <div class="flight-meta">
-                                <span>Hãng: <b>${flight.airline}</b></span>
-                                <span>🧳 Hành lý: ${flight.baggage}</span>
-                                <span style="color: var(--primary); font-weight: 600; margin-top: 4px;">📅 Ngày bay: ${flight.flightDate}</span>
+                            <div class="price-action">
+                                ${priceDisplay}
+                                ${btnDisplay}
+                                ${toggleBtnHTML}
                             </div>
                         </div>
-                        <div class="price-action">
-                            ${priceDisplay}
-                            ${btnDisplay}
-                        </div>
+                        ${detailsHTML}
                     </div>
                 `;
                 container.innerHTML += cardHTML;
             });
         }
 
+        function toggleDetails(id) {
+            const detailsDiv = document.getElementById(`details-${id}`);
+            if (detailsDiv.classList.contains('show')) {
+                detailsDiv.classList.remove('show');
+            } else {
+                detailsDiv.classList.add('show');
+            }
+        }
+
+        // CHUYỂN TRỰC TIẾP URL GỐC CHỨA "3_7" LÊN CHECKOUT
         function selectFlight(flightId, unitPrice) {
             if (currentStep === 1 && isRoundTrip) {
                 selectedOutboundFlight = flightId;
@@ -278,11 +369,13 @@
                 window.scrollTo(0, 0); 
                 fetchFlightsFromDB(); 
             } else {
-                const outFlight = selectedOutboundFlight || flightId;
-                const inFlight = isRoundTrip ? flightId : '';
+                const outFlightStr = String(selectedOutboundFlight || flightId);
+                const inFlightStr = isRoundTrip ? String(flightId) : '';
                 const totalUnitPrice = outboundPrice + unitPrice; 
 
-                window.location.href = `/checkout?outbound=${outFlight}&inbound=${inFlight}&adults=${adults}&children=${children}&class=${seatClass}&totalPrice=${totalUnitPrice}`;
+                // Gửi thẳng url nguyên gốc không chế cháo
+                let url = `/checkout?outbound=${outFlightStr}&inbound=${inFlightStr}&adults=${adults}&children=${children}&class=${seatClass}&totalPrice=${totalUnitPrice}`;
+                window.location.href = url;
             }
         }
     </script>

@@ -63,7 +63,6 @@
         }
         .filter-bar select:focus, .filter-bar input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
-        /* --- CSS CHO CỬA SỔ MODAL (THÊM/SỬA) --- */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
         .modal-content { background: white; padding: 30px; border-radius: 16px; width: 500px; max-width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
@@ -84,6 +83,7 @@
         <div class="nav-item" onclick="switchTab('aircrafts', this)">Đội tàu bay</div>
         <div class="nav-item" onclick="switchTab('reservations', this)">Đơn đặt vé</div>
         <div class="nav-item" onclick="switchTab('passengers', this)">Danh sách Khách</div>
+        <div class="nav-item" onclick="switchTab('accounts', this)">Tài khoản khách</div>
         <div class="nav-item" onclick="switchTab('reports', this)">Tài chính</div>
     </div>
 
@@ -160,6 +160,22 @@
                 </table>
             </div>
 
+            <div id="section-accounts" class="tab-content card" style="display: none;">
+                <div class="section-title">Danh sách Tài khoản Khách hàng</div>
+                <div class="filter-bar">
+                    <input type="text" id="searchAccInput" onkeyup="filterAccounts()" placeholder="🔍 Tìm kiếm theo ID, Tên, Username, Email, Số điện thoại..." style="flex-grow: 1;">
+                    <button class="btn btn-edit" onclick="resetAccFilters()">Làm mới</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr><th>Mã KH</th><th>Họ và Tên</th><th>Username</th><th>Mật khẩu</th><th>Email</th><th>Số điện thoại</th><th style="width: 100px;">Xử lý</th></tr>
+                        </thead>
+                        <tbody id="account-table"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div id="section-reports" class="tab-content" style="display: none;">
                 <div class="summary-box">
                     <div class="box box-revenue" style="max-width: 400px;"><h4>Tổng Doanh Thu Thực Tế</h4><h1 id="total-revenue">0 đ</h1></div>
@@ -172,6 +188,39 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="customerModalTitle">Sửa Thông Tin Khách Hàng</h3>
+                <button class="close-btn" onclick="closeModal('customerModal')">&times;</button>
+            </div>
+            <form id="customerForm" onsubmit="saveCustomer(event)">
+                <input type="hidden" id="cus_id">
+                <div class="form-group">
+                    <label>Họ và Tên</label>
+                    <input type="text" id="cus_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Tên đăng nhập (Username)</label>
+                    <input type="text" id="cus_username" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="text" id="cus_password" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="cus_email">
+                </div>
+                <div class="form-group">
+                    <label>Số điện thoại</label>
+                    <input type="text" id="cus_phone">
+                </div>
+                <button type="submit" class="btn btn-add" style="width: 100%; padding: 12px; font-size: 15px; margin-top: 10px;">Lưu Thay Đổi</button>
+            </form>
         </div>
     </div>
 
@@ -196,8 +245,8 @@
                     <input type="number" id="ac_seats" required min="10">
                 </div>
                 <div class="form-group">
-                    <label>ID Hãng hàng không (Airline ID)</label>
-                    <input type="number" id="ac_airline" required placeholder="Nhập ID hãng bay...">
+                    <label>Hãng hàng không</label>
+                    <select id="ac_airline" required></select>
                 </div>
                 <div class="form-group">
                     <label>Trạng thái</label>
@@ -232,22 +281,22 @@
                 </div>
                 <div style="display: flex; gap: 15px;">
                     <div class="form-group" style="flex: 1;">
-                        <label>ID Hãng Bay</label>
-                        <input type="number" id="fl_airline" required>
+                        <label>Hãng Bay</label>
+                        <select id="fl_airline" required></select>
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>ID Tàu Bay</label>
-                        <input type="number" id="fl_aircraft" required>
+                        <label>Tàu Bay</label>
+                        <select id="fl_aircraft" required></select>
                     </div>
                 </div>
                 <div style="display: flex; gap: 15px;">
                     <div class="form-group" style="flex: 1;">
-                        <label>ID Sân Bay Đi</label>
-                        <input type="number" id="fl_dep_airport" required>
+                        <label>Sân Bay Đi</label>
+                        <select id="fl_dep_airport" required></select>
                     </div>
                     <div class="form-group" style="flex: 1;">
-                        <label>ID Sân Bay Đến</label>
-                        <input type="number" id="fl_arr_airport" required>
+                        <label>Sân Bay Đến</label>
+                        <select id="fl_arr_airport" required></select>
                     </div>
                 </div>
                 
@@ -286,7 +335,77 @@
             </form>
         </div>
     </div>
+    
     <script>
+        // ==================================================
+        // HÀM SIÊU DÒ TÌM KEY (TÌM KEY BẤT CHẤP VIẾT HOA/THƯỜNG/GẠCH DƯỚI)
+        // ==================================================
+        function getVal(obj, targetKey) {
+            if (!obj) return '';
+            const normalizedTarget = targetKey.toLowerCase().replace(/_/g, '');
+            for (let key in obj) {
+                if (key.toLowerCase().replace(/_/g, '') === normalizedTarget) {
+                    return obj[key];
+                }
+            }
+            return '';
+        }
+
+        // ==================================================
+        // HÀM SIÊU SET OPTION CHO DROPDOWN
+        // Khắc phục triệt để lỗi BackEnd chỉ trả về Tên mà không trả về ID
+        // ==================================================
+        function setSelectOption(selectId, valId, valText) {
+            let sel = document.getElementById(selectId);
+            if (!sel) return;
+            
+            // 1. Thử set bằng ID (Nếu API có trả về ID)
+            if (valId !== '' && valId !== null && valId !== undefined) {
+                sel.value = valId;
+                if (sel.value == valId) return; // Set thành công thì dừng
+            }
+            
+            // 2. Fallback: Nếu không có ID, lục tìm Option nào có chữ giống với Tên
+            if (valText !== '' && valText !== null && valText !== undefined) {
+                let searchTxt = String(valText).toLowerCase().trim();
+                for (let i = 0; i < sel.options.length; i++) {
+                    let optTxt = sel.options[i].text.toLowerCase().trim();
+                    // Kiểm tra chuỗi chứa nhau (vd: "airbus a350" nằm trong "VN-A886 (Airbus A350)")
+                    if (optTxt.includes(searchTxt) || searchTxt.includes(optTxt)) {
+                        sel.selectedIndex = i;
+                        return;
+                    }
+                }
+            }
+            
+            // 3. Không tìm thấy thì reset về mặc định
+            sel.selectedIndex = 0;
+        }
+
+        // ==================================================
+        // TẢI DỮ LIỆU DANH MỤC CHO CÁC DROPDOWN
+        // ==================================================
+        let dropdownData = { airlines: [], aircrafts: [], airports: [] };
+
+        function loadDropdowns() {
+            fetch('/api/dropdown/airlines').then(r=>r.json()).then(d => {
+                dropdownData.airlines = d;
+                const opts = '<option value="">-- Chọn Hãng --</option>' + d.map(x => `<option value="${x.id}">${x.name}</option>`).join('');
+                document.getElementById('ac_airline').innerHTML = opts;
+                document.getElementById('fl_airline').innerHTML = opts;
+            });
+            fetch('/api/dropdown/aircrafts').then(r=>r.json()).then(d => {
+                dropdownData.aircrafts = d;
+                document.getElementById('fl_aircraft').innerHTML = '<option value="">-- Chọn Máy Bay --</option>' + d.map(x => `<option value="${x.id}">${x.number} (${x.model})</option>`).join('');
+            });
+            fetch('/api/dropdown/airports').then(r=>r.json()).then(d => {
+                dropdownData.airports = d;
+                const opts = '<option value="">-- Chọn Sân Bay --</option>' + d.map(x => `<option value="${x.id}">${x.IATA_code} - ${x.name}</option>`).join('');
+                document.getElementById('fl_dep_airport').innerHTML = opts;
+                document.getElementById('fl_arr_airport').innerHTML = opts;
+            });
+        }
+
         // ==================================================
         // CÁC HÀM TIỆN ÍCH DÙNG CHUNG
         // ==================================================
@@ -327,13 +446,110 @@
             }
         }
 
-        // Điều khiển Modal
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 
         // ==================================================
-        // 1. LOGIC LỊCH BAY (KÈM THÊM/SỬA/XÓA)
+        // LOGIC TÀI KHOẢN KHÁCH HÀNG (CUSTOMER)
+        // ==================================================
+        let globalAccounts = [];
+
+        function loadAccounts() {
+            fetch('/api/customers').then(r => r.json()).then(data => {
+                globalAccounts = data;
+                renderAccountsTable(data);
+            }).catch(err => console.error("Lỗi tải khách hàng: ", err));
+        }
+
+        function renderAccountsTable(data) {
+            if (data.length === 0) {
+                document.getElementById('account-table').innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: #6b7280;">Không tìm thấy tài khoản nào.</td></tr>`;
+                return;
+            }
+            document.getElementById('account-table').innerHTML = data.map(a => `
+                <tr>
+                    <td><b style="color:#2563eb">${getVal(a, 'id')}</b></td>
+                    <td><b>${getVal(a, 'name')}</b></td>
+                    <td><span style="color: #6366f1; font-weight: 500;">@${getVal(a, 'username')}</span></td>
+                    <td><span style="color: #ef4444; font-weight: 500;">${getVal(a, 'password')}</span></td>
+                    <td>${getVal(a, 'email') || '---'}</td>
+                    <td>${getVal(a, 'phone_no') || '---'}</td>
+                    <td>
+                        <button class="btn btn-edit" onclick="openCustomerModal('${getVal(a, 'id')}')" style="margin-bottom: 5px; width: 100%;">Sửa</button>
+                        <button class="btn btn-delete" onclick="deleteAccount('${getVal(a, 'id')}')" style="width: 100%;">Xóa</button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function filterAccounts() {
+            const keyword = document.getElementById("searchAccInput").value.toLowerCase();
+            const filtered = globalAccounts.filter(a => {
+                const textString = `${getVal(a, 'id')} ${getVal(a, 'name')} ${getVal(a, 'username')} ${getVal(a, 'email')} ${getVal(a, 'phone_no')}`.toLowerCase();
+                return textString.includes(keyword);
+            });
+            renderAccountsTable(filtered);
+        }
+
+        function resetAccFilters() {
+            document.getElementById("searchAccInput").value = "";
+            renderAccountsTable(globalAccounts);
+        }
+
+        function openCustomerModal(id) {
+            const form = document.getElementById('customerForm');
+            form.reset();
+            const cus = globalAccounts.find(a => getVal(a, 'id') === id);
+            if (cus) {
+                document.getElementById('cus_id').value = id;
+                document.getElementById('cus_name').value = getVal(cus, 'name');
+                document.getElementById('cus_username').value = getVal(cus, 'username');
+                document.getElementById('cus_password').value = getVal(cus, 'password');
+                document.getElementById('cus_email').value = getVal(cus, 'email');
+                document.getElementById('cus_phone').value = getVal(cus, 'phone_no');
+                openModal('customerModal');
+            }
+        }
+
+        function saveCustomer(event) {
+            event.preventDefault();
+            const id = document.getElementById('cus_id').value;
+            const payload = {
+                name: document.getElementById('cus_name').value,
+                username: document.getElementById('cus_username').value,
+                password: document.getElementById('cus_password').value,
+                email: document.getElementById('cus_email').value,
+                phoneNo: document.getElementById('cus_phone').value
+            };
+
+            fetch(`/api/customers/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(res => {
+                if(res.ok) {
+                    alert("Cập nhật tài khoản thành công!");
+                    closeModal('customerModal');
+                    loadAccounts();
+                } else { alert("Cập nhật thất bại!"); }
+            }).catch(err => alert("Lỗi kết nối tới Server."));
+        }
+
+        function deleteAccount(id) {
+            if(confirm(`⚠️ Xác nhận xóa tài khoản ${id}? LƯU Ý: Xóa tài khoản sẽ ảnh hưởng đến các đơn đặt vé của người này!`)) {
+                fetch(`/api/customers/${id}`, { method: 'DELETE' }).then(res => {
+                    if(res.ok) {
+                        alert("Đã xóa tài khoản thành công!"); 
+                        loadAccounts();
+                    } else {
+                        alert("Không thể xóa! Khách hàng này đã có lịch sử đặt vé hoặc thanh toán trên hệ thống.");
+                    }
+                }).catch(err => alert("Lỗi kết nối tới Server."));
+            }
+        }
+
+        // ==================================================
+        // LOGIC LỊCH BAY (KÈM THÊM/SỬA/XÓA)
         // ==================================================
         let globalFlights = [];
 
@@ -346,8 +562,8 @@
         }
 
         function populateAirportDropdowns(data) {
-            const deps = [...new Set(data.map(f => f.departureLocation))].filter(Boolean);
-            const arrs = [...new Set(data.map(f => f.arrivalLocation))].filter(Boolean);
+            const deps = [...new Set(data.map(f => getVal(f, 'departureLocation')))].filter(Boolean);
+            const arrs = [...new Set(data.map(f => getVal(f, 'arrivalLocation')))].filter(Boolean);
 
             const depSelect = document.getElementById('filterDep');
             const arrSelect = document.getElementById('filterArr');
@@ -368,17 +584,17 @@
             }
             document.getElementById('flight-table').innerHTML = flights.map(f => `
                 <tr class="flight-row">
-                    <td><b style="color:#2563eb">FL-${f.flightId}</b></td>
-                    <td><b>${f.departureLocation} ➔ ${f.arrivalLocation}</b><br><small style="color:#6b7280">${f.airlineName} (${f.aircraftModel})</small></td>
-                    <td>${formatDate(f.scheduledDeparture)}</td>
-                    <td><b style="color:#10b981">${formatVND(f.priceEconomy)}</b></td>
-                    <td><b style="color:#3b82f6">${formatVND(f.pricePremium)}</b></td>
-                    <td><b style="color:#8b5cf6">${formatVND(f.priceBusiness)}</b></td>
-                    <td><b style="color:#ec4899">${formatVND(f.priceFirst)}</b></td>
-                    <td>${renderBadge(f.status)}</td>
+                    <td><b style="color:#2563eb">FL-${getVal(f, 'flightId')}</b></td>
+                    <td><b>${getVal(f, 'departureLocation')} ➔ ${getVal(f, 'arrivalLocation')}</b><br><small style="color:#6b7280">${getVal(f, 'airlineName')} (${getVal(f, 'aircraftModel')})</small></td>
+                    <td>${formatDate(getVal(f, 'scheduledDeparture'))}</td>
+                    <td><b style="color:#10b981">${formatVND(getVal(f, 'priceEconomy'))}</b></td>
+                    <td><b style="color:#3b82f6">${formatVND(getVal(f, 'pricePremium'))}</b></td>
+                    <td><b style="color:#8b5cf6">${formatVND(getVal(f, 'priceBusiness'))}</b></td>
+                    <td><b style="color:#ec4899">${formatVND(getVal(f, 'priceFirst'))}</b></td>
+                    <td>${renderBadge(getVal(f, 'status'))}</td>
                     <td>
-                        <button class="btn btn-edit" onclick="openFlightModal(${f.flightId})" style="margin-bottom: 5px; width: 100%;">Sửa</button>
-                        <button class="btn btn-delete" onclick="deleteFlight(${f.flightId})" style="width: 100%;">Xóa</button>
+                        <button class="btn btn-edit" onclick="openFlightModal(${getVal(f, 'flightId')})" style="margin-bottom: 5px; width: 100%;">Sửa</button>
+                        <button class="btn btn-delete" onclick="deleteFlight(${getVal(f, 'flightId')})" style="width: 100%;">Xóa</button>
                     </td>
                 </tr>`).join('');
         }
@@ -390,14 +606,15 @@
             const dateFilter = document.getElementById("filterDate").value;
 
             const filtered = globalFlights.filter(f => {
-                const textString = `${f.flightId} ${f.departureLocation} ${f.arrivalLocation} ${f.airlineName} ${f.aircraftModel}`.toLowerCase();
+                const textString = `${getVal(f, 'flightId')} ${getVal(f, 'departureLocation')} ${getVal(f, 'arrivalLocation')} ${getVal(f, 'airlineName')} ${getVal(f, 'aircraftModel')}`.toLowerCase();
                 const textMatch = textString.includes(keyword);
-                const depMatch = depFilter === "" || f.departureLocation === depFilter;
-                const arrMatch = arrFilter === "" || f.arrivalLocation === arrFilter;
+                const depMatch = depFilter === "" || getVal(f, 'departureLocation') === depFilter;
+                const arrMatch = arrFilter === "" || getVal(f, 'arrivalLocation') === arrFilter;
                 
                 let dateMatch = true;
-                if (dateFilter && f.scheduledDeparture) {
-                    const d = new Date(f.scheduledDeparture);
+                const scheduledDep = getVal(f, 'scheduledDeparture');
+                if (dateFilter && scheduledDep) {
+                    const d = new Date(scheduledDep);
                     const fDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     dateMatch = (fDate === dateFilter);
                 }
@@ -421,25 +638,32 @@
             document.getElementById('flightModalTitle').innerText = id ? 'Cập nhật Chuyến Bay FL-' + id : 'Thêm Chuyến Bay Mới';
             
             if (id) {
-                const flight = globalFlights.find(f => f.flightId === id);
+                const flight = globalFlights.find(f => getVal(f, 'flightId') == id);
                 if (flight) {
                     const formatForInput = (dateStr) => {
-                        const d = new Date(dateStr);
-                        return d.toISOString().slice(0, 16);
+                        if (!dateStr) return '';
+                        try {
+                            const d = new Date(dateStr);
+                            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                            return d.toISOString().slice(0, 16);
+                        } catch(e) { return ''; }
                     };
-                    document.getElementById('fl_departure').value = formatForInput(flight.scheduledDeparture);
-                    document.getElementById('fl_arrival').value = formatForInput(flight.scheduledArrival);
-                    document.getElementById('fl_status').value = flight.status;
-                    document.getElementById('fl_airline').value = flight.airlineId || '';
-                    document.getElementById('fl_aircraft').value = flight.aircraftId || '';
-                    document.getElementById('fl_dep_airport').value = flight.departsAirportId || '';
-                    document.getElementById('fl_arr_airport').value = flight.arrivesAirportId || '';
 
-                    // Cập nhật giá
-                    document.getElementById('fl_price_eco').value = flight.priceEconomy || 0;
-                    document.getElementById('fl_price_pre').value = flight.pricePremium || 0;
-                    document.getElementById('fl_price_bus').value = flight.priceBusiness || 0;
-                    document.getElementById('fl_price_first').value = flight.priceFirst || 0;
+                    document.getElementById('fl_departure').value = formatForInput(getVal(flight, 'scheduledDeparture'));
+                    document.getElementById('fl_arrival').value = formatForInput(getVal(flight, 'scheduledArrival'));
+
+                    document.getElementById('fl_status').value = getVal(flight, 'status') || 'scheduled';
+                    
+                    // SỬ DỤNG HÀM SIÊU SET OPTION ĐỂ KHẮC PHỤC LỖI KHÔNG COPY ĐƯỢC
+                    setSelectOption('fl_airline', getVal(flight, 'airlineId'), getVal(flight, 'airlineName'));
+                    setSelectOption('fl_aircraft', getVal(flight, 'aircraftId'), getVal(flight, 'aircraftModel'));
+                    setSelectOption('fl_dep_airport', getVal(flight, 'departsAirportId'), getVal(flight, 'departureLocation'));
+                    setSelectOption('fl_arr_airport', getVal(flight, 'arrivesAirportId'), getVal(flight, 'arrivalLocation'));
+
+                    document.getElementById('fl_price_eco').value = getVal(flight, 'priceEconomy') || 0;
+                    document.getElementById('fl_price_pre').value = getVal(flight, 'pricePremium') || 0;
+                    document.getElementById('fl_price_bus').value = getVal(flight, 'priceBusiness') || 0;
+                    document.getElementById('fl_price_first').value = getVal(flight, 'priceFirst') || 0;
                 }
             }
             openModal('flightModal');
@@ -456,7 +680,6 @@
                 departsAirportId: document.getElementById('fl_dep_airport').value,
                 arrivesAirportId: document.getElementById('fl_arr_airport').value,
                 status: document.getElementById('fl_status').value,
-                // Gửi kèm giá
                 priceEconomy: document.getElementById('fl_price_eco').value,
                 pricePremium: document.getElementById('fl_price_pre').value,
                 priceBusiness: document.getElementById('fl_price_bus').value,
@@ -493,26 +716,16 @@
             }
         }
 
-
         // ==================================================
-        // 2. LOGIC ĐỘI TÀU BAY (KÈM THÊM/SỬA/XÓA)
+        // LOGIC ĐỘI TÀU BAY (KÈM THÊM/SỬA/XÓA)
         // ==================================================
         let globalAircrafts = [];
 
         function loadAircrafts() {
             fetch('/api/aircrafts').then(r => r.json()).then(data => {
                 globalAircrafts = data;
-                populateAirlineDropdown(data);
                 renderAircraftsTable(data);
             });
-        }
-
-        function populateAirlineDropdown(data) {
-            const airlines = [...new Set(data.map(a => a.airlineName))].filter(Boolean);
-            const select = document.getElementById('filterAirline');
-            const currentVal = select.value;
-            select.innerHTML = '<option value="">-- Tất cả Hãng hàng không --</option>' + airlines.map(a => `<option value="${a}">${a}</option>`).join('');
-            select.value = currentVal;
         }
 
         function renderAircraftsTable(data) {
@@ -521,19 +734,15 @@
                 return;
             }
             document.getElementById('aircraft-table').innerHTML = data.map(a => {
-                const aId = a.aircraftId || a.id || a.aircraftid;
-                const aNum = a.regNumber || a.number || a.regnumber;
-                const aMod = a.aircraftModel || a.model || a.aircraftmodel;
-                const aSeat = a.totalSeat || a.total_seats || a.totalseat;
-
+                const aId = getVal(a, 'id') || getVal(a, 'aircraftId');
                 return `
                 <tr>
-                    <td><b>${aNum}</b></td>
-                    <td>${aMod}</td>
-                    <td>${a.airlineName}</td>
-                    <td>${a.contactInfo || '---'}</td>
-                    <td>${aSeat} ghế</td>
-                    <td>${renderBadge(a.status)}</td>
+                    <td><b>${getVal(a, 'number') || getVal(a, 'regNumber')}</b></td>
+                    <td>${getVal(a, 'model') || getVal(a, 'aircraftModel')}</td>
+                    <td>${getVal(a, 'airlineName') || '---'}</td>
+                    <td>${getVal(a, 'contactInfo') || '---'}</td>
+                    <td>${getVal(a, 'totalSeats') || getVal(a, 'totalSeat')} ghế</td>
+                    <td>${renderBadge(getVal(a, 'status'))}</td>
                     <td>
                         <button class="btn btn-edit" onclick="openAircraftModal(${aId})" style="margin-bottom: 5px; width: 100%;">Sửa</button>
                         <button class="btn btn-delete" onclick="deleteAircraft(${aId})" style="width: 100%;">Xóa</button>
@@ -546,11 +755,9 @@
             const keyword = document.getElementById("searchAircraftInput").value.toLowerCase();
             const airlineFilter = document.getElementById("filterAirline").value;
             const filtered = globalAircrafts.filter(a => {
-                const aNum = String(a.regNumber || a.number || a.regnumber || '');
-                const aMod = String(a.aircraftModel || a.model || a.aircraftmodel || '');
-                const textString = `${aNum} ${aMod}`.toLowerCase();
+                const textString = `${getVal(a, 'number')} ${getVal(a, 'regNumber')} ${getVal(a, 'model')} ${getVal(a, 'aircraftModel')}`.toLowerCase();
                 const textMatch = textString.includes(keyword);
-                const airlineMatch = airlineFilter === "" || a.airlineName === airlineFilter;
+                const airlineMatch = airlineFilter === "" || getVal(a, 'airlineId') == airlineFilter;
                 return textMatch && airlineMatch;
             });
             renderAircraftsTable(filtered);
@@ -569,13 +776,15 @@
             document.getElementById('aircraftModalTitle').innerText = id ? 'Cập nhật Tàu Bay ID: ' + id : 'Thêm Tàu Bay Mới';
             
             if (id) {
-                const ac = globalAircrafts.find(a => (a.aircraftId || a.id || a.aircraftid) === id);
+                const ac = globalAircrafts.find(a => (getVal(a, 'id') || getVal(a, 'aircraftId')) == id);
                 if (ac) {
-                    document.getElementById('ac_number').value = ac.regNumber || ac.number || ac.regnumber || '';
-                    document.getElementById('ac_model').value = ac.aircraftModel || ac.model || ac.aircraftmodel || '';
-                    document.getElementById('ac_seats').value = ac.totalSeat || ac.total_seats || ac.totalseat || 100;
-                    document.getElementById('ac_status').value = ac.status || 'active';
-                    document.getElementById('ac_airline').value = ac.airlineId || ''; 
+                    document.getElementById('ac_number').value = getVal(ac, 'number') || getVal(ac, 'regNumber');
+                    document.getElementById('ac_model').value = getVal(ac, 'model') || getVal(ac, 'aircraftModel');
+                    document.getElementById('ac_seats').value = getVal(ac, 'totalSeats') || getVal(ac, 'totalSeat') || 100;
+                    document.getElementById('ac_status').value = getVal(ac, 'status') || 'active';
+                    
+                    // SỬ DỤNG HÀM SIÊU SET OPTION ĐỂ KHẮC PHỤC LỖI KHÔNG COPY ĐƯỢC
+                    setSelectOption('ac_airline', getVal(ac, 'airlineId'), getVal(ac, 'airlineName'));
                 }
             }
             openModal('aircraftModal');
@@ -622,9 +831,8 @@
             }
         }
 
-
         // ==================================================
-        // 3. LOGIC ĐƠN ĐẶT VÉ
+        // LOGIC ĐƠN ĐẶT VÉ
         // ==================================================
         let globalReservations = [];
 
@@ -639,9 +847,9 @@
         function populateResFlightDropdown(data) {
             let allFlights = [];
             data.forEach(r => {
-                const fStr = r.flightCodes || r.flightcodes || r.FLIGHTCODES || '';
+                const fStr = getVal(r, 'flightCodes');
                 if(fStr) {
-                    fStr.split(',').forEach(id => allFlights.push(id.trim()));
+                    fStr.split(/[,_]+/).forEach(id => allFlights.push(id.trim()));
                 }
             });
             const uniqueFlights = [...new Set(allFlights)].filter(Boolean).sort((a,b) => parseInt(a)-parseInt(b));
@@ -659,21 +867,16 @@
                 return;
             }
             document.getElementById('reservation-table').innerHTML = data.map(r => {
-                const flightCodesStr = r.flightCodes || r.flightcodes || r.FLIGHTCODES || '';
+                const flightCodesStr = getVal(r, 'flightCodes');
                 let flightBadges = '<span style="color:#9ca3af; font-size:12px;">Chưa xếp</span>';
                 if (flightCodesStr) {
-                    flightBadges = flightCodesStr.split(',').map(id => 
+                    flightBadges = flightCodesStr.split(/[,_]+/).map(id => 
                         `<span style="background:#ede9fe; color:#8b5cf6; padding:4px 8px; border-radius:6px; font-weight:700; margin-right:4px; display:inline-block; font-size: 12px; margin-bottom: 2px;">FL-${id.trim()}</span>`
                     ).join('');
                 }
 
-                const resId = r.reservationId || r.reservationid || r.RESERVATIONID;
-                const custName = r.customerName || r.customername || r.CUSTOMERNAME;
-                const custPhone = r.customerPhone || r.customerphone || r.CUSTOMERPHONE;
-                const createdAt = r.createdAt || r.createdat || r.CREATEDAT;
-                const ticketCount = r.ticketCount || r.ticketcount || r.TICKETCOUNT;
-                const totalAmt = r.totalAmount || r.totalamount || r.TOTALAMOUNT;
-                const resStatus = String(r.status || '').toLowerCase();
+                const resId = getVal(r, 'reservationId');
+                const resStatus = String(getVal(r, 'status')).toLowerCase();
 
                 let actionHtml = '';
                 if (resStatus === 'pending') {
@@ -689,10 +892,10 @@
                 <tr>
                     <td><b style="color:#2563eb; font-size: 15px;">#RES-${resId}</b></td>
                     <td>${flightBadges}</td>
-                    <td><b>${custName}</b><br><small style="color:#6b7280">📞 ${custPhone}</small></td>
-                    <td>${formatDate(createdAt)}</td>
-                    <td>${ticketCount} vé</td>
-                    <td><b style="color:#10b981">${formatVND(totalAmt)}</b></td>
+                    <td><b>${getVal(r, 'customerName')}</b><br><small style="color:#6b7280">📞 ${getVal(r, 'customerPhone')}</small></td>
+                    <td>${formatDate(getVal(r, 'createdAt'))}</td>
+                    <td>${getVal(r, 'ticketCount')} vé</td>
+                    <td><b style="color:#10b981">${formatVND(getVal(r, 'totalAmount'))}</b></td>
                     <td>${renderBadge(resStatus)}</td>
                     <td style="width: 110px;">${actionHtml}</td>
                 </tr>`;
@@ -704,15 +907,11 @@
             const flightFilter = document.getElementById("filterResFlight").value;
 
             const filtered = globalReservations.filter(r => {
-                const resId = String(r.reservationId || r.reservationid || r.RESERVATIONID || '');
-                const custName = String(r.customerName || r.customername || r.CUSTOMERNAME || '');
-                const custPhone = String(r.customerPhone || r.customerphone || r.CUSTOMERPHONE || '');
-                
-                const textString = `${resId} ${custName} ${custPhone}`.toLowerCase();
+                const textString = `${getVal(r, 'reservationId')} ${getVal(r, 'customerName')} ${getVal(r, 'customerPhone')}`.toLowerCase();
                 const textMatch = textString.includes(keyword);
 
-                const fStr = r.flightCodes || r.flightcodes || r.FLIGHTCODES || '';
-                const flightArr = fStr ? fStr.split(',').map(s => s.trim()) : [];
+                const fStr = getVal(r, 'flightCodes');
+                const flightArr = fStr ? fStr.split(/[,_]+/).map(s => s.trim()) : [];
                 const flightMatch = flightFilter === "" || flightArr.includes(flightFilter);
 
                 return textMatch && flightMatch;
@@ -771,7 +970,7 @@
         }
 
         // ==================================================
-        // 4. LOGIC HÀNH KHÁCH
+        // LOGIC HÀNH KHÁCH
         // ==================================================
         let globalPassengers = [];
 
@@ -784,7 +983,7 @@
         }
 
         function populatePassFlightDropdown(data) {
-            const uniqueFlights = [...new Set(data.map(p => p.flightId || p.flightid || p.FLIGHTID))].filter(Boolean).sort((a,b) => parseInt(a)-parseInt(b));
+            const uniqueFlights = [...new Set(data.map(p => getVal(p, 'flightId')))].filter(Boolean).sort((a,b) => parseInt(a)-parseInt(b));
             const select = document.getElementById('filterPassFlight');
             const currentVal = select.value;
             select.innerHTML = '<option value="">-- Lọc theo Chuyến bay --</option>' + 
@@ -798,24 +997,15 @@
                 return;
             }
             document.getElementById('passenger-table').innerHTML = data.map(p => {
-                const tId = p.ticketId || p.ticketid || p.TICKETID;
-                const rId = p.reservationId || p.reservationid || p.RESERVATIONID;
-                const fId = p.flightId || p.flightid || p.FLIGHTID;
-                const pName = p.name || p.NAME;
-                const pAge = p.age || p.AGE;
-                const pPass = p.passportNumber || p.passportnumber || p.PASSPORTNUMBER;
-                const pSeat = p.seatNumber || p.seatnumber || p.SEATNUMBER;
-                const pClass = p.seatClass || p.seatclass || p.SEATCLASS;
-                
                 return `
                 <tr>
-                    <td><b>#TIX-${tId}</b></td>
-                    <td><a href="#" style="color:#2563eb">#RES-${rId}</a></td>
-                    <td><b>${pName}</b><br><small style="color:#6b7280">${pAge} tuổi</small></td>
-                    <td>${pPass}</td>
-                    <td><b style="color:#8b5cf6">FL-${fId}</b></td>
-                    <td><span style="background:#f3f4f6; padding:4px 8px; border-radius:4px; border:1px solid #d1d5db; font-weight:bold">${pSeat}</span></td>
-                    <td>${pClass}</td>
+                    <td><b>#TIX-${getVal(p, 'ticketId')}</b></td>
+                    <td><a href="#" style="color:#2563eb">#RES-${getVal(p, 'reservationId')}</a></td>
+                    <td><b>${getVal(p, 'name')}</b><br><small style="color:#6b7280">${getVal(p, 'age')} tuổi</small></td>
+                    <td>${getVal(p, 'passportNumber')}</td>
+                    <td><b style="color:#8b5cf6">FL-${getVal(p, 'flightId')}</b></td>
+                    <td><span style="background:#f3f4f6; padding:4px 8px; border-radius:4px; border:1px solid #d1d5db; font-weight:bold">${getVal(p, 'seatNumber')}</span></td>
+                    <td>${getVal(p, 'seatClass')}</td>
                 </tr>`;
             }).join('');
         }
@@ -825,15 +1015,9 @@
             const flightFilter = document.getElementById("filterPassFlight").value;
 
             const filtered = globalPassengers.filter(p => {
-                const pName = String(p.name || p.NAME || '').toLowerCase();
-                const pPass = String(p.passportNumber || p.passportnumber || p.PASSPORTNUMBER || '').toLowerCase();
-                const rId = String(p.reservationId || p.reservationid || p.RESERVATIONID || '').toLowerCase();
-                const tId = String(p.ticketId || p.ticketid || p.TICKETID || '').toLowerCase();
-                
-                const textString = `${pName} ${pPass} ${rId} ${tId}`;
+                const textString = `${getVal(p, 'name')} ${getVal(p, 'passportNumber')} ${getVal(p, 'reservationId')} ${getVal(p, 'ticketId')}`.toLowerCase();
                 const textMatch = textString.includes(keyword);
-
-                const fId = String(p.flightId || p.flightid || p.FLIGHTID || '');
+                const fId = String(getVal(p, 'flightId'));
                 const flightMatch = flightFilter === "" || fId === flightFilter;
 
                 return textMatch && flightMatch;
@@ -848,19 +1032,17 @@
         }
 
         // ==================================================
-        // 5. BÁO CÁO TÀI CHÍNH
+        // BÁO CÁO TÀI CHÍNH
         // ==================================================
         function loadReports() {
             fetch('/api/reports/revenue').then(r => r.json()).then(data => {
                 let money = 0; 
                 document.getElementById('report-table').innerHTML = data.map(rawRow => {
-                    const r = {};
-                    for (let key in rawRow) { r[key.toLowerCase()] = rawRow[key]; }
-
-                    let amt = Number(r.totalrevenue || r.amount || 0); 
-                    const statusVal = String(r.paymentstatus || r.status || '');
-                    const resId = r.reservationid || r.reservation_id || '';
-                    const pDate = r.paymentdate || r.payment_time || '';
+                    
+                    let amt = Number(getVal(rawRow, 'amount') || getVal(rawRow, 'totalRevenue')); 
+                    const statusVal = String(getVal(rawRow, 'paymentStatus') || getVal(rawRow, 'status'));
+                    const resId = getVal(rawRow, 'reservationId');
+                    const pDate = getVal(rawRow, 'paymentDate') || getVal(rawRow, 'paymentTime');
 
                     const isRefund = (statusVal === '2' || amt < 0); 
                     if (isRefund && amt > 0) { amt = -amt; }
@@ -885,7 +1067,11 @@
             });
         }
 
-        window.onload = loadFlights;
+        // Tự động load danh mục Dropdown và load bảng dữ liệu
+        window.onload = function() {
+            loadDropdowns();
+            loadFlights();
+        };
     </script>
 </body>
 </html>

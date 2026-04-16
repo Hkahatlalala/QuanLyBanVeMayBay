@@ -46,17 +46,14 @@
         <aside class="sidebar">
             <div class="summary-card">
                 <h3 style="margin-bottom: 20px; color: #111827;">Tóm tắt đơn hàng</h3>
-                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="font-weight: bold; margin-bottom: 5px;">✈ Chiều đi: FL-<span id="sumOutbound">...</span></div>
-                    <div style="font-weight: bold; margin-bottom: 5px;" id="inboundDiv">✈ Chiều về: FL-<span id="sumInbound">...</span></div>
-                    <div style="font-size: 13px; color: #6b7280;">Hạng ghế: <span id="sumClass">...</span></div>
-                </div>
+                
+                <div id="flightSummaryBox" style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-bottom: 20px;"></div>
                 
                 <div class="summary-row"><span>Người lớn:</span><strong id="sumAdults">0</strong></div>
                 <div class="summary-row"><span>Trẻ em:</span><strong id="sumChildren">0</strong></div>
                 
                 <div class="summary-row" style="padding-top: 10px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
-                    <span>Giá vé / khách:</span><strong id="sumUnitPrice">0 đ</strong>
+                    <span>Tổng Tạm tính / Khách:</span><strong id="sumUnitPrice">0 đ</strong>
                 </div>
 
                 <div class="summary-total">
@@ -81,8 +78,9 @@
         const children = parseInt(urlParams.get('children')) || 0;
         const seatClass = urlParams.get('class') || 'Economy';
         
-        const outboundFlight = urlParams.get('outbound');
-        const inboundFlight = urlParams.get('inbound');
+        // Lấy đúng nguyên bản dạng chuỗi (vd: "3_7")
+        const outboundFlight = urlParams.get('outbound') || '';
+        const inboundFlight = urlParams.get('inbound') || '';
         
         const pricePerPerson = parseInt(urlParams.get('totalPrice')) || 0; 
         const totalPassengers = adults + children;
@@ -92,17 +90,30 @@
 
         document.getElementById('sumAdults').innerText = adults;
         document.getElementById('sumChildren').innerText = children;
-        document.getElementById('sumClass').innerText = seatClass;
-        document.getElementById('sumOutbound').innerText = outboundFlight;
-        
-        if (inboundFlight) {
-            document.getElementById('sumInbound').innerText = inboundFlight;
-        } else {
-            document.getElementById('inboundDiv').style.display = 'none';
-        }
-
         document.getElementById('sumUnitPrice').innerText = formatVND(pricePerPerson);
         document.getElementById('sumTotalPrice').innerText = formatVND(finalTotalPrice);
+
+        // HIỂN THỊ TÓM TẮT CHUYẾN BAY (CHIA RÕ CHẶNG 1 VÀ 2)
+        let flightSummaryHTML = '';
+        if (outboundFlight.includes('_') || outboundFlight.includes(',')) {
+            const parts = outboundFlight.split(/[_,]+/);
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 8px; color: #2563eb;">✈ Chiều đi (Chặng 1): FL-${parts[0]}</div>`;
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 5px; color: #2563eb;">✈ Chiều đi (Chặng 2): FL-${parts[1]}</div>`;
+        } else if (outboundFlight) {
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 5px; color: #2563eb;">✈ Chiều đi: FL-${outboundFlight}</div>`;
+        }
+
+        if (inboundFlight.includes('_') || inboundFlight.includes(',')) {
+            const parts = inboundFlight.split(/[_,]+/);
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 8px; margin-top: 15px; color: #10b981;">✈ Chiều về (Chặng 1): FL-${parts[0]}</div>`;
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 5px; color: #10b981;">✈ Chiều về (Chặng 2): FL-${parts[1]}</div>`;
+        } else if (inboundFlight) {
+            flightSummaryHTML += `<div style="font-weight: bold; margin-bottom: 5px; margin-top: 15px; color: #10b981;">✈ Chiều về: FL-${inboundFlight}</div>`;
+        }
+        
+        flightSummaryHTML += `<div style="font-size: 13px; color: #6b7280; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #d1d5db;">Hạng ghế: <span style="font-weight: bold; color: #374151;">${seatClass}</span></div>`;
+        
+        document.getElementById('flightSummaryBox').innerHTML = flightSummaryHTML;
 
         function generatePassengerForms() {
             const container = document.getElementById('passengerFormsContainer');
@@ -147,13 +158,13 @@
                 alert("Vui lòng điền đầy đủ Họ tên, Ngày sinh, CCCD và Quốc tịch cho tất cả hành khách!"); return;
             }
 
-            // ĐÃ THÊM: Gửi thêm inboundFlightId xuống Backend, và nhân đôi TicketCount nếu là khứ hồi
+            // Gửi dữ liệu dưới dạng chuỗi chuẩn lên cho Java
             const payload = {
-                flightId: parseInt(outboundFlight),
-                inboundFlightId: inboundFlight ? parseInt(inboundFlight) : null,
+                flightId: String(outboundFlight),
+                inboundFlightId: inboundFlight ? String(inboundFlight) : null,
                 seatClass: seatClass,
                 totalAmount: finalTotalPrice,
-                ticketCount: inboundFlight ? (totalPassengers * 2) : totalPassengers,
+                ticketCount: totalPassengers,
                 customerId: currentCustomer.id.toString(), 
                 passengers: passengerList
             };
@@ -169,7 +180,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.success) {
-                    alert("🎉 Xuất vé và xếp ghế thành công! Mã đơn của bạn là: " + data.reservationId);
+                    alert("🎉 Xuất vé và xếp ghế thành công! Đã tạo các đơn hàng riêng biệt cho từng chuyến bay.");
                     window.location.href = "/"; 
                 } else {
                     alert("Lỗi: " + data.message);

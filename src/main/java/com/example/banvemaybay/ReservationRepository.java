@@ -9,12 +9,12 @@ import java.util.Map;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Integer> {
     
-    // ĐÃ FIX: Thêm cột flightCodes để lấy danh sách mã chuyến bay (hỗ trợ khứ hồi)
+    // ĐÃ FIX: Dùng dấu phẩy chuẩn để ghép chuỗi. Việc xử lý gạch dưới hay phẩy sẽ do Javascript lo.
     @Query(value = "SELECT r.id AS \"reservationId\", c.name AS \"customerName\", c.phone_no AS \"customerPhone\", " +
                    "r.created_at AS \"createdAt\", r.status AS \"status\", " +
                    "(SELECT COUNT(*) FROM ticket t WHERE t.reservation_id = r.id) AS \"ticketCount\", " +
                    "(SELECT IFNULL(SUM(price), 0) FROM ticket t WHERE t.reservation_id = r.id) AS \"totalAmount\", " +
-                   "(SELECT GROUP_CONCAT(DISTINCT t.flight_id SEPARATOR ', ') FROM ticket t WHERE t.reservation_id = r.id) AS \"flightCodes\" " +
+                   "(SELECT GROUP_CONCAT(DISTINCT t.flight_id SEPARATOR ',') FROM ticket t WHERE t.reservation_id = r.id) AS \"flightCodes\" " +
                    "FROM reservation r JOIN customer c ON r.customer_id = c.id ORDER BY r.created_at DESC", nativeQuery = true)
     List<Map<String, Object>> findAllReservationInfo();
 
